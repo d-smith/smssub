@@ -15,14 +15,14 @@ func TestHandler(t *testing.T) {
 		{
 			// Test that the handler responds with the correct response
 			// when a valid name is provided in the HTTP body
-			request: events.APIGatewayProxyRequest{Body: "Paul"},
-			expect:  "Hello Paul",
+			request: events.APIGatewayProxyRequest{Body: `{"instance":"foo","notify":"+12223334444"}`, RequestContext:events.APIGatewayProxyRequestContext{RequestID:"resource1"}},
+			expect:  "",
 			err:     nil,
 		},
 		{
 			// Test that the handler responds ErrNameNotProvided
 			// when no name is provided in the HTTP body
-			request: events.APIGatewayProxyRequest{Body: ""},
+			request: events.APIGatewayProxyRequest{Body: "", RequestContext:events.APIGatewayProxyRequestContext{RequestID:"resource2"}},
 			expect:  "",
 			err:     ErrBodyNotProvided,
 		},
