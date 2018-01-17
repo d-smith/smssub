@@ -28,8 +28,11 @@ func TestHandler(t *testing.T) {
 		},
 	}
 
+	var awsContext AWSContext
+	handler := makeHandler(&awsContext)
+
 	for _, test := range tests {
-		response, err := Handler(test.request)
+		response, err := handler(test.request)
 		assert.IsType(t, test.err, err)
 		assert.Equal(t, test.expect, response.Body)
 	}
