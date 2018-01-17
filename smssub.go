@@ -7,6 +7,10 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"log"
 	"os"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/aws"
 )
 
 var (
@@ -24,15 +28,30 @@ type SubResponse struct {
 }
 
 type AWSContext struct {
+	ddbSvc dynamodbiface.DynamoDBAPI
 }
 
 var subscriptionTable = os.Getenv("SUBSCRIPTION_TABLE")
 
-func writeSubscriptionInfo(subscribe *SubRequest) error {
-	return nil
+func writeSubscriptionInfo(ddbSvc dynamodbiface.DynamoDBAPI, subscribe *SubRequest) error {
+
+	input := &dynamodb.PutItemInput{
+		Item: map[string]*dynamodb.AttributeValue{
+			"InstanceID": {
+				S: aws.String("Somewhat Famous"),
+			},
+			"Notify": {
+				S: aws.String("No One You Know"),
+			},
+		},
+		TableName: aws.String(subscriptionTable),
+	}
+	_, err := ddbSvc.PutItem(input)
+
+	return err
 }
 
-func makeHandler(awsContent *AWSContext) func(events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func makeHandler(awsContext *AWSContext) func(events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	// Handler is your Lambda function handler
 	// It uses Amazon API Gateway request/responses provided by the aws-lambda-go/events package,
@@ -49,7 +68,7 @@ func makeHandler(awsContent *AWSContext) func(events.APIGatewayProxyRequest) (ev
 			return events.APIGatewayProxyResponse{}, ErrUnmarshallProblem
 		}
 
-		if err := writeSubscriptionInfo(&subscribe); err != nil {
+		if err := writeSubscriptionInfo(awsContext.ddbSvc, &subscribe); err != nil {
 			log.Println("error persisting subscription information")
 			return events.APIGatewayProxyResponse{}, err
 		}
@@ -68,7 +87,13 @@ func makeHandler(awsContent *AWSContext) func(events.APIGatewayProxyRequest) (ev
 }
 
 func main() {
-	var awsContent AWSContext
-	handler := makeHandler(&awsContent)
+	var awsContext AWSContext
+
+	sess := session.New()
+	svc := dynamodb.New(sess)
+
+	awsContext.ddbSvc = svc
+
+	handler := makeHandler(&awsContext)
 	lambda.Start(handler)
 }
