@@ -38,6 +38,13 @@ func TestHandler(t *testing.T) {
 			expect:  "",
 			err:     ErrBodyNotProvided,
 		},
+		{
+			// Test that the handler responds with the correct response
+			// when a valid name is provided in the HTTP body
+			request: events.APIGatewayProxyRequest{Body: `{"what":"foo","notify":"+12223334444"}`, RequestContext:events.APIGatewayProxyRequestContext{RequestID:"resource1"}},
+			expect:  "",
+			err:     ErrMandatoryElementsMissing,
+		},
 	}
 
 	var awsContext AWSContext
