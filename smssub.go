@@ -16,11 +16,12 @@ import (
 var (
 	ErrBodyNotProvided   = errors.New("no HTTP body")
 	ErrUnmarshallProblem = errors.New("error unmarshalling payload")
+	ErrMandatoryElementsMissing = errors.New("Input must provide both instance and notify fields")
 )
 
 type SubRequest struct {
-	InstanceID string `json:instance`
-	Notify     string `json:notify`
+	InstanceID string `json:"instance"`
+	Notify     string `json:"notify"`
 }
 
 type SubResponse struct {
@@ -38,10 +39,10 @@ func writeSubscriptionInfo(ddbSvc dynamodbiface.DynamoDBAPI, subscribe *SubReque
 	input := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
 			"InstanceID": {
-				S: aws.String("Somewhat Famous"),
+				S: aws.String(subscribe.InstanceID),
 			},
 			"Notify": {
-				S: aws.String("No One You Know"),
+				S: aws.String(subscribe.Notify),
 			},
 		},
 		TableName: aws.String(subscriptionTable),
@@ -61,11 +62,18 @@ func makeHandler(awsContext *AWSContext) func(events.APIGatewayProxyRequest) (ev
 		// stdout and stderr are sent to AWS CloudWatch Logs
 		log.Printf("Processing Lambda request %s\n", request.RequestContext.RequestID)
 
+		log.Printf("Request body: %s\n", request.Body)
+
 		//Unmarshall request
 		var subscribe SubRequest
 		if err := json.Unmarshal([]byte(request.Body), &subscribe); err != nil {
 			log.Println("error unmarshalling request")
 			return events.APIGatewayProxyResponse{}, ErrUnmarshallProblem
+		}
+
+		if subscribe.InstanceID == "" || subscribe.Notify == "" {
+			log.Println("inputs not fully specified")
+			return events.APIGatewayProxyResponse{}, ErrMandatoryElementsMissing
 		}
 
 		if err := writeSubscriptionInfo(awsContext.ddbSvc, &subscribe); err != nil {
