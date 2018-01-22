@@ -36,19 +36,6 @@ Resources:
           - - !Ref 'AWS::StackName'
             - Subscribers
 
-#  SMSSubFunction:
-#    Type: "AWS::Lambda::Function"
-#    Properties:
-#      Handler: "main"
-#      Role: !GetAtt SMSSubExecutionRole.Arn
-#      Code:
-#          S3Bucket: !Ref CodeBucketName
-#          S3Key: !Ref ZipFileName
-#      Runtime: "go1.x"
-#      Timeout: 60
-#      Environment:
-#        Variables:
-#          SUBSCRIPTION_TABLE: !Ref SMSSubTable
 
   SMSSubFunction:
     Type: AWS::Serverless::Function
